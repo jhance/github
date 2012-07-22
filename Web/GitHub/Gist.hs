@@ -20,7 +20,7 @@ data Gist = Gist {
     gistUrl :: T.Text,
     gistId :: Integer,
     gistDescription :: Maybe T.Text,
-    --gistUser :: User
+    gistUser :: GistUser,
     gistCommentCount :: Int,
     gistHtmlUrl :: T.Text,
     gistPullUrl :: T.Text,
@@ -29,11 +29,24 @@ data Gist = Gist {
     }
     deriving (Show, Read, Eq)
 
+-- | Represents a User from the result of a Gist query. This doesn't contain
+-- all of the same data as a normal User, so to convert another HTTPS query
+-- must be made to GitHub to get more detail about the User.
+data GistUser = GistUser {
+    gistUserLogin :: T.Text,
+    gistUserId :: Integer,
+    gistUserAvatarUrl :: T.Text,
+    gistUserGravatarId :: T.Text,
+    gistUserUrl :: T.Text
+    }
+    deriving (Show, Read, Eq)
+
 instance FromJSON Gist where
     parseJSON (Object o) = Gist
         <$> o .: "url"
         <*> liftM read (o .: "id")
         <*> o .:? "description"
+        <*> o .: "user"
         <*> o .: "comments"
         <*> o .: "html_url"
         <*> o .: "git_pull_url"
