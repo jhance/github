@@ -44,7 +44,8 @@ data PageState = PNext String
 
 -- | Pulls a single page from GitHub using `simpleRequest`. If available, it
 -- uses a url specified with the rel from the header of the previous request
--- to grab the next page.
+-- to grab the next page. The JSON Value's are the values from within the
+-- top-level array.
 --
 -- Since 0.1.0
 pagePull :: (Failure HttpException m, MonadResource m, MonadBaseControl IO m)
@@ -95,7 +96,9 @@ parseNextRel s = let left = fromJust $ elemIndex '<' s
                  in take (right - 1) . drop (left + 1) $ s
 
 -- | A simple request that completely ignores pagination. This should be used
--- for any verb except GET which should use pagedRequest.
+-- for any verb except GET which should use pagedRequest. The response is parsed
+-- as a top-level JSON object (this varies from `pagedRequest`, where the
+-- values returned are objects from within the top-level array)
 -- 
 -- Since 0.1.0
 simpleRequest :: (MonadResource m, MonadBaseControl IO m)
