@@ -1,7 +1,8 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 module Web.GitHub.Internal.Request
     (
-    pagedRequest
+    pagedRequest,
+    simpleRequest
     )
 where
 
