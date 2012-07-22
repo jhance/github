@@ -3,8 +3,14 @@ module Web.GitHub.Gist
     (
     Gist(..),
     getGist,
-    getGists,
+
+    -- * User Gists
     gists
+    getGists,
+
+    -- * Public Gists
+    publicGists,
+    getPublicGists
     )
 where
 
@@ -21,6 +27,9 @@ import Network.HTTP.Conduit
 
 import Web.GitHub.Internal.Request
 
+-- | Represents a complete Gist as obtained from the JSON sent back by a
+-- HTTPS request. This should rarely if ever be created without a HTTPS
+-- request, since the information is likely to be invalid.
 data Gist = Gist {
     gistUrl :: T.Text,
     gistId :: Integer,
@@ -84,21 +93,42 @@ getGist id m = do req <- parseUrl $ "https://api.github.com/gists/" ++ show id
                   (val, headers) <- simpleRequest req m
                   return $ jsonToGist val
 
--- | Gets a list of all Gists of a user. Equivalent to
--- 'https://api.github.com/users/:user/gists'
+-- | Gets a list of all Gists of a user.
 -- 
 -- As long as there is a next rel, it will continue to fetch more gists. For
 -- more efficiency, use `gists`
+--
+-- This is a small wrapper around the `gists` function.
 getGists :: (Failure HttpException m, MonadResource m, MonadBaseControl IO m)
          => String
          -> Manager
          -> m [Gist]
 getGists user m = gists user m $$ CL.consume
 
--- | Source that obtains all gists of a user with the specified username.
+-- | Source that obtains all gists of a user with the specified username. If
+-- the user is logged in, then it is able to grab all gists; otherwise only
+-- public gists will be fetched. This is equivalent to
+-- `https://api.github.com/users/:user/gists'
 gists :: (Failure HttpException m, MonadResource m, MonadBaseControl IO m)
       => String
       -> Manager
       -> Source m Gist
-gists user m= let url = "https://api.github.com/users/" ++ user ++ "/gists"
-              in pagedRequest url m $= CL.map jsonToGist
+gists user m = let url = "https://api.github.com/users/" ++ user ++ "/gists"
+               in pagedRequest url m $= CL.map jsonToGist
+
+-- | Gets all public gists from all users. This is a small wrapper around
+-- `publicGists`
+getPublicGists :: (Failure HttpException m, MonadResource m, MonadBaseControl IO m)
+               => Manager
+               -> m [Gist]
+getPublicGists m = publicGists m $$ CL.consume
+
+-- | Source that obtains all public gists from all users. This is equivalent
+-- to `GET https://api.github.com/gists/public` or, if the user is not
+-- authenticated, `GET https://api.github.com/gists`, although this behavior
+-- is not relied upon.
+publicGists :: (Failure HttpException, MonadResource m, MonadBaseControl IO m)
+            => Manager
+            -> Source m Gist
+publicGists m = let url = "https://api.github.com/gists/public"
+                in pagedRequest url m $= CL.map jsonToGist
