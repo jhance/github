@@ -25,6 +25,7 @@ library
                      , bytestring == 0.9.*
                      , case-insensitive == 0.4.*
                      , conduit == 0.4.*
+                     , containers == 0.4.*
                      , failure == 0.2.*
                      , http-conduit == 1.4.*
                      , http-types == 0.6.*
