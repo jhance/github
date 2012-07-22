@@ -79,8 +79,10 @@ pagePull _ _ (PNextVector vec nextUrl) = do
         else return $ StateOpen (PNextVector (V.tail vec) nextUrl) (V.head vec)
 pagePull _ _ (PDoneVector vec) = do
     if V.length vec == 1
-        then return $ StateClosed
+        then return $ StateOpen PDone (V.head vec)
         else return $ StateOpen (PDoneVector $ V.tail vec) (V.head vec)
+
+pagePull _ _ PDone = return StateClosed
 
 findNextLink :: String -> Maybe String
 findNextLink s = let rels = split (dropDelims $ oneOf ",") s
