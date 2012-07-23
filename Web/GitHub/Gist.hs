@@ -69,6 +69,11 @@ data GistCreate = GistCreate {
     gistCreateFiles :: M.Map T.Text T.Text
     }
 
+data GistEdit = GistEdit {
+    gistEditDescription :: Maybe T.Text,
+    gistEditFiles :: Maybe (M.Map T.Text (Maybe T.Text, Maybe T.Text)) -- A map of the form old name to (contents, new name)
+    }
+
 instance FromJSON Gist where
     parseJSON (Object o) = Gist
         <$> o .: "url"
@@ -94,16 +99,33 @@ instance FromJSON GistUser where
     parseJSON _ = mzero
 
 instance ToJSON GistCreate where
-    toJSON (GistCreate desc pub files) = object $ obj3
-        where obj = []
-              obj1 = case desc of 
-                        Nothing -> obj
-                        Just desc' -> ["description" .= desc'] ++ obj
-              obj2 = ["public" .= pub] ++ obj1
-              obj3 = ["files" .= filesObj] ++ obj2
+    toJSON (GistCreate desc pub files) = object $ descPair ++ publicPair ++ filesPair
+        where descPair = case desc of 
+                            Nothing -> []
+                            Just desc' -> ["desription" .= desc']
+              publicPair = ["public" .= pub]
+              filesPair = ["files" .= filesObj]
 
               filesObj = object $ M.foldrWithKey f [] files
               f filename content acc = ["filename" .= object ["content" .= content]] ++ acc
+
+instance ToJSON GistEdit where
+    toJSON (GistEdit desc files) = object $ descPair ++ filesPair
+        where descPair = case desc of
+                Nothing -> []
+                Just desc' -> ["description" .= desc']
+              filesPair = case files of
+                Nothing -> []
+                Just files' -> ["files" .= object (M.foldrWithKey f [] files')]
+              f filename (content, newname) acc = contentPair ++ newnamePair ++ acc
+                where contentPair = case content of
+                        Nothing -> []
+                        Just content' -> ["content" .= content']
+                      newnamePair = case newname of
+                        Nothing -> []
+                        Just newname' -> ["filename" .= newname']
+                  
+
 
 jsonToGist :: Value -> Gist
 jsonToGist val = case fromJSON val of
