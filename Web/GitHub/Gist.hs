@@ -69,9 +69,11 @@ data GistCreate = GistCreate {
     gistCreateFiles :: M.Map T.Text T.Text
     }
 
+-- | Represents an update to a `Gist`. Fields with value of Nothing will not
+-- be updated; every field is optional.
 data GistEdit = GistEdit {
     gistEditDescription :: Maybe T.Text,
-    gistEditFiles :: Maybe (M.Map T.Text (Maybe T.Text, Maybe T.Text)) -- A map of the form old name to (contents, new name)
+    gistEditFiles :: Maybe (M.Map T.Text (Maybe T.Text, Maybe T.Text)) -- ^ A map of the form old name to (contents, new name)
     }
 
 instance FromJSON Gist where
