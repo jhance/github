@@ -1,4 +1,9 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
+-- | An API for creating and fetching Gists from GitHub. Most of the functions
+-- here have very generic types over monad typeclasses; it may be helpful to
+-- note that for the most part either 'ResourceT' 'IO' or 'IO' will fit
+-- depending on if the resulting monad needs to be a 'MonadResource' or not,
+-- respectively.
 module Web.GitHub.Gist
     (
     -- * Core Data Types
@@ -22,6 +27,7 @@ where
 import Control.Applicative
 import Control.Failure
 import Control.Monad
+import Control.Monad.IO.Class
 import Control.Monad.Trans.Control
 import Control.Monad.Trans.Resource
 import Data.Aeson
@@ -126,8 +132,6 @@ instance ToJSON GistEdit where
                       newnamePair = case newname of
                         Nothing -> []
                         Just newname' -> ["filename" .= newname']
-                  
-
 
 jsonToGist :: Value -> Gist
 jsonToGist val = case fromJSON val of
@@ -135,13 +139,15 @@ jsonToGist val = case fromJSON val of
                     Error err -> error err
 
 -- | Gets a gist by ID.
-getGist :: (Failure HttpException m, MonadResource m, MonadBaseControl IO m)
+getGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+            MonadThrow m, MonadUnsafeIO m)
         => Integer 
         -> Manager
         -> m Gist
-getGist id m = do req <- parseUrl $ "https://api.github.com/gists/" ++ show id
-                  (val, headers) <- simpleRequest req m
-                  return $ jsonToGist val
+getGist id m = runResourceT $ do
+    req <- parseUrl $ "https://api.github.com/gists/" ++ show id
+    (val, headers) <- simpleRequest req m
+    return $ jsonToGist val
 
 -- | Gets a list of all Gists of a user.
 -- 
@@ -149,11 +155,12 @@ getGist id m = do req <- parseUrl $ "https://api.github.com/gists/" ++ show id
 -- more efficiency, use `gists`.
 --
 -- This is a small wrapper around the `gists` function.
-getGists :: (Failure HttpException m, MonadResource m, MonadBaseControl IO m)
+getGists :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+             MonadThrow m, MonadUnsafeIO m)
          => String
          -> Manager
          -> m [Gist]
-getGists user m = gists user m $$ CL.consume
+getGists user m = runResourceT $ gists user m $$ CL.consume
 
 -- | Source that obtains all gists of a user with the specified username. If
 -- the user is logged in, then it is able to grab all gists; otherwise only
@@ -168,10 +175,11 @@ gists user m = let url = "https://api.github.com/users/" ++ user ++ "/gists"
 
 -- | Gets all public gists from all users. This is a small wrapper around
 -- `publicGists`
-getPublicGists :: (Failure HttpException m, MonadResource m, MonadBaseControl IO m)
+getPublicGists :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+                   MonadThrow m, MonadUnsafeIO m)
                => Manager
                -> m [Gist]
-getPublicGists m = publicGists m $$ CL.consume
+getPublicGists m = runResourceT $ publicGists m $$ CL.consume
 
 -- | Source that obtains all public gists from all users. This is equivalent
 -- to `GET https://api.github.com/gists/public` or, if the user is not
