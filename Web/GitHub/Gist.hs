@@ -122,7 +122,7 @@ getGist id m = do req <- parseUrl $ "https://api.github.com/gists/" ++ show id
 -- | Gets a list of all Gists of a user.
 -- 
 -- As long as there is a next rel, it will continue to fetch more gists. For
--- more efficiency, use `gists`
+-- more efficiency, use `gists`.
 --
 -- This is a small wrapper around the `gists` function.
 getGists :: (Failure HttpException m, MonadResource m, MonadBaseControl IO m)
