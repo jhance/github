@@ -180,7 +180,7 @@ getGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
         -> m Gist
 getGist id m = runResourceT $ do
     req <- parseUrl $ "https://api.github.com/gists/" ++ show id
-    (val, headers) <- simpleRequest req m
+    (val, _) <- simpleRequest req m
     return $ jsonToGist val
 
 -- | Gets a list of all Gists of a user.
@@ -232,7 +232,7 @@ createGist gc m = runResourceT $ do
     let json = encode gc
     req <- parseUrl "https://api.github.com/gists"
     let req' = req { method = "POST", requestBody = RequestBodyLBS json }
-    (val, headers) <- simpleRequest req' m
+    (val, _) <- simpleRequest req' m
     return $ jsonToGist val
 
 -- | Edits a 'Gist' with the given id based on the fields available in a
@@ -249,5 +249,5 @@ editGist id ge m = runResourceT $ do
     let json = encode ge
     req <- parseUrl $ "https://api.github.com/gists/" ++ show id
     let req' = req { method = "PATCH", requestBody = RequestBodyLBS json }
-    (val, headers) <- simpleRequest req' m
+    (val, _) <- simpleRequest req' m
     return $ jsonToGist val
