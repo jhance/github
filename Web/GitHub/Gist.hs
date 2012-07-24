@@ -18,17 +18,15 @@ module Web.GitHub.Gist
     editGist,
     getGist,
 
-    -- * User Gists
+    -- * User & Public Gists
     gists,
     getGists,
+    publicGists,
 
     -- * Stars
     checkGistStar,
     starGist,
     unstarGist,
-
-    -- * Public Gists
-    publicGists,
     )
 where
 
@@ -186,58 +184,12 @@ instance ToJSON GistEdit where
 jsonToGist :: Value -> Gist
 jsonToGist val = case fromJSON val of
                     Success gist -> gist
-                    Error err -> error err
-
--- | Gets a gist by ID.
-getGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
-            MonadThrow m, MonadUnsafeIO m)
-        => Integer 
-        -> Manager
-        -> m Gist
-getGist id m = runResourceT $ do
-    req <- parseUrl $ "https://api.github.com/gists/" ++ show id
-    (val, _) <- simpleRequest req m
-    return $ jsonToGist val
-
--- | Gets a list of all Gists of a user.
--- 
--- As long as there is a next rel, it will continue to fetch more gists. For
--- more efficiency, use `gists`.
---
--- This is a small wrapper around the `gists` function.
-getGists :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
-             MonadThrow m, MonadUnsafeIO m)
-         => String
-         -> Manager
-         -> m [Gist]
-getGists user m = runResourceT $ gists user m $$ CL.consume
-
--- | Source that obtains all gists of a user with the specified username. If
--- the user is logged in, then it is able to grab all gists; otherwise only
--- public gists will be fetched. This is equivalent to
--- `https://api.github.com/users/:user/gists'
-gists :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m)
-      => String
-      -> Manager
-      -> Source m Gist
-gists user m = let url = "https://api.github.com/users/" ++ user ++ "/gists"
-               in pagedRequest url m $= CL.map jsonToGist
-
--- | Source that obtains all public gists from all users. This is equivalent
--- to `GET https://api.github.com/gists/public` or, if the user is not
--- authenticated, `GET https://api.github.com/gists`, although this behavior
--- is not relied upon.
-publicGists :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m)
-            => Manager
-            -> Source m Gist
-publicGists m = let url = "https://api.github.com/gists/public"
-                in pagedRequest url m $= CL.map jsonToGist
 
 -- | Creates a new 'Gist' based on the information from a 'GistCreate'. The new
 -- 'Gist' is created by a request and sent back in JSON and parsed. This
 -- essentially converts a 'GistCreate' template into a real 'Gist' with all of
 -- its associated information.
--- 
+--
 -- Equivalent to `POST https://api.github.com/gists`.
 createGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
                MonadThrow m, MonadUnsafeIO m)
@@ -267,6 +219,71 @@ editGist i ge m = runResourceT $ do
     let req' = req { method = "PATCH", requestBody = RequestBodyLBS json }
     (val, _) <- simpleRequest req' m
     return $ jsonToGist val
+                    Error err -> error err
+
+-- | Gets a gist by ID.
+getGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+            MonadThrow m, MonadUnsafeIO m)
+        => Integer 
+        -> Manager
+        -> m Gist
+getGist id m = runResourceT $ do
+    req <- parseUrl $ "https://api.github.com/gists/" ++ show id
+    (val, _) <- simpleRequest req m
+    return $ jsonToGist val
+
+-- | Source that obtains all gists of a user with the specified username. If
+-- the user is logged in, then it is able to grab all gists; otherwise only
+-- public gists will be fetched. This is equivalent to
+-- `https://api.github.com/users/:user/gists'
+gists :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m)
+      => String
+      -> Manager
+      -> Source m Gist
+gists user m = let url = "https://api.github.com/users/" ++ user ++ "/gists"
+               in pagedRequest url m $= CL.map jsonToGist
+
+-- | Gets a list of all Gists of a user.
+-- 
+-- As long as there is a next rel, it will continue to fetch more gists. For
+-- more efficiency, use `gists`.
+--
+-- This is a small wrapper around the `gists` function.
+getGists :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+             MonadThrow m, MonadUnsafeIO m)
+         => String
+         -> Manager
+         -> m [Gist]
+getGists user m = runResourceT $ gists user m $$ CL.consume
+
+-- | Source that obtains all public gists from all users. This is equivalent
+-- to `GET https://api.github.com/gists/public` or, if the user is not
+-- authenticated, `GET https://api.github.com/gists`, although this behavior
+-- is not relied upon.
+publicGists :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m)
+            => Manager
+            -> Source m Gist
+publicGists m = let url = "https://api.github.com/gists/public"
+                in pagedRequest url m $= CL.map jsonToGist
+
+-- | Checks to see if a 'Gist' is starred based on its ID, based on the header
+-- response. A response of 204 No Content indicates there is a star, while a
+-- response of 404 Not Found indicates that there is no star.
+--
+-- Equivalent to `POST https://api.github.com/gists/:id/star`.
+checkGistStar :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+                  MonadThrow m, MonadUnsafeIO m)
+              => Integer
+              -> Manager
+              -> m Bool
+checkGistStar i m = runResourceT $ do
+   req <- parseUrl $ "https://api.github.com/gists/" ++ show i ++ "/star"
+   (_, headers) <- simpleRequest req m
+   case lookup "status" headers of
+    Nothing -> error "checkGistStar: No HTTP Status in Response Headers"
+    Just status | "204" `B.isInfixOf` status -> return True
+                | "404" `B.isInfixOf` status -> return False
+                | otherwise -> error $ "checkGistStar: Unknown HTTP Status. Should be 204 or 404, but header was: " ++ BC.unpack status
 
 -- | Marks a 'Gist' as being starred based on its ID.
 --
@@ -295,22 +312,3 @@ unstarGist i m = runResourceT $ do
     let req' = req { method = "DELETE" }
     simpleRequest req' m
     return ()
-
--- | Checks to see if a 'Gist' is starred based on its ID, based on the header
--- response. A response of 204 No Content indicates there is a star, while a
--- response of 404 Not Found indicates that there is no star.
---
--- Equivalent to `POST https://api.github.com/gists/:id/star`.
-checkGistStar :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
-                  MonadThrow m, MonadUnsafeIO m)
-              => Integer
-              -> Manager
-              -> m Bool
-checkGistStar i m = runResourceT $ do
-   req <- parseUrl $ "https://api.github.com/gists/" ++ show i ++ "/star"
-   (_, headers) <- simpleRequest req m
-   case lookup "status" headers of
-    Nothing -> error "checkGistStar: No HTTP Status in Response Headers"
-    Just status | "204" `B.isInfixOf` status -> return True
-                | "404" `B.isInfixOf` status -> return False
-                | otherwise -> error $ "checkGistStar: Unknown HTTP Status. Should be 204 or 404, but header was: " ++ BC.unpack status
