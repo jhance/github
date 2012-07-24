@@ -46,7 +46,7 @@ data Gist = Gist {
     gistUrl :: T.Text,
     gistId :: Integer,
     gistDescription :: Maybe T.Text,
-    gistUser :: GistUser,
+    gistUser :: Maybe GistUser,
     gistCommentCount :: Int,
     gistHtmlUrl :: T.Text,
     gistPullUrl :: T.Text,
@@ -87,7 +87,7 @@ instance FromJSON Gist where
         <$> o .: "url"
         <*> liftM read (o .: "id")
         <*> o .:? "description"
-        <*> o .: "user"
+        <*> o .:? "user"
         <*> o .: "comments"
         <*> o .: "html_url"
         <*> o .: "git_pull_url"
@@ -110,12 +110,12 @@ instance ToJSON GistCreate where
     toJSON (GistCreate desc pub files) = object $ descPair ++ publicPair ++ filesPair
         where descPair = case desc of 
                             Nothing -> []
-                            Just desc' -> ["desription" .= desc']
+                            Just desc' -> ["description" .= desc']
               publicPair = ["public" .= pub]
               filesPair = ["files" .= filesObj]
 
               filesObj = object $ M.foldrWithKey f [] files
-              f filename content acc = ["filename" .= object ["content" .= content]] ++ acc
+              f filename content acc = [filename .= object ["content" .= content]] ++ acc
 
 instance ToJSON GistEdit where
     toJSON (GistEdit desc files) = object $ descPair ++ filesPair
@@ -190,3 +190,19 @@ publicGists :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m)
             -> Source m Gist
 publicGists m = let url = "https://api.github.com/gists/public"
                 in pagedRequest url m $= CL.map jsonToGist
+
+-- | Creates a new 'Gist' based on the information from a 'GistCreate'. The new
+-- 'Gist' is created by a request and sent back in JSON and parsed. This
+-- essentially converts a 'GistCreate' template into a real 'Gist' with all of
+-- its associated information.
+createGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+               MonadThrow m, MonadUnsafeIO m)
+           => GistCreate
+           -> Manager
+           -> m Gist
+createGist gc m = runResourceT $ do
+    let json = encode gc
+    req <- parseUrl "https://api.github.com/gists"
+    let req' = req { method = "POST", requestBody = RequestBodyLBS json }
+    (val, headers) <- simpleRequest req' m
+    return $ jsonToGist val
