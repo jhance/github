@@ -4,8 +4,9 @@
 -- that automatically deserialize and serialize the JSON requests and responses.
 module Web.GitHub.Internal.Request
     (
+    parseValue
     pagedRequest,
-    simpleRequest
+    simpleRequest,
     )
 where
 
@@ -24,6 +25,14 @@ import Data.Maybe
 import qualified Data.Vector as V
 import Network.HTTP.Conduit
 import Network.HTTP.Types
+
+-- | Internal utility function for easily parsing a JSON Value.
+-- Used on the result from a 'simpleRequest' or on the individual values sent
+-- by the source 'pagedRequest'.
+parseValue :: FromJSON a => Value -> a
+parseValue val = case fromJSON val of
+                    Success x -> x
+                    Error err -> error err
 
 -- | Requests all of the pages from GitHub. Because GitHub sends JSON in pages,
 -- with typically 30 items per-page, it is necessary to send more than one

@@ -160,13 +160,6 @@ instance ToJSON GistEdit where
                         Nothing -> []
                         Just newname' -> ["filename" .= newname']
 
--- | Internal utility function for easily converting a JSON Value to a Gist.
--- Used on the result from a 'simpleRequest' or on the individual values sent
--- by the source 'pagedRequest'.
-jsonToGist :: Value -> Gist
-jsonToGist val = case fromJSON val of
-                    Success gist -> gist
-                    Error err -> error err
 
 -- | Creates a new 'Gist' based on the information from a 'GistCreate'. The new
 -- 'Gist' is created by a request and sent back in JSON and parsed. This
@@ -184,7 +177,7 @@ createGist gc m = runResourceT $ do
     req <- parseUrl "https://api.github.com/gists"
     let req' = req { method = "POST", requestBody = RequestBodyLBS json }
     (val, _) <- simpleRequest req' m
-    return $ jsonToGist val
+    return $ parseValue val
 
 -- | Deletes the 'Gist' with the given ID.
 --
@@ -215,7 +208,7 @@ editGist i ge m = runResourceT $ do
     req <- parseUrl $ "https://api.github.com/gists/" ++ show i
     let req' = req { method = "PATCH", requestBody = RequestBodyLBS json }
     (val, _) <- simpleRequest req' m
-    return $ jsonToGist val
+    return $ parseValue val
 
 -- | Forks a 'Gist', creating a new 'Gist' with a different unique ID.
 --
@@ -229,7 +222,7 @@ forkGist i m = runResourceT $ do
     req <- parseUrl $ "https://api.github.com/gists/:id/fork"
     let req' = req { method = "POST" }
     (val, _) <- simpleRequest req' m
-    return $ jsonToGist val
+    return $ parseValue val
 
 -- | Gets a gist by ID.
 --
@@ -242,7 +235,7 @@ getGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
 getGist id m = runResourceT $ do
     req <- parseUrl $ "https://api.github.com/gists/" ++ show id
     (val, _) <- simpleRequest req m
-    return $ jsonToGist val
+    return $ parseValue val
 
 -- | Source that obtains all gists of a user with the specified username. If
 -- the user is logged in, then it is able to grab all gists; otherwise only
@@ -254,7 +247,7 @@ gists :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m)
       -> Manager
       -> Source m Gist
 gists user m = let url = "https://api.github.com/users/" ++ user ++ "/gists"
-               in pagedRequest url m $= CL.map jsonToGist
+               in pagedRequest url m $= CL.map parseValue
 
 -- | Gets a list of all Gists of a user.
 -- 
@@ -278,7 +271,7 @@ publicGists :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m)
             => Manager
             -> Source m Gist
 publicGists m = let url = "https://api.github.com/gists/public"
-                in pagedRequest url m $= CL.map jsonToGist
+                in pagedRequest url m $= CL.map parseValue
 
 -- | Checks to see if a 'Gist' is starred based on its ID, based on the header
 -- response. A response of 204 No Content indicates there is a star, while a
