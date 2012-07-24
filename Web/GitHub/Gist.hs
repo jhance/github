@@ -78,6 +78,7 @@ data GistCreate = GistCreate {
     gistCreatePublic :: Bool,
     gistCreateFiles :: M.Map T.Text T.Text
     }
+    deriving (Show, Read, Eq)
 
 -- | Represents an update to a 'Gist'. Fields with value of Nothing will not
 -- be updated; every field is optional.
@@ -85,6 +86,7 @@ data GistEdit = GistEdit {
     gistEditDescription :: Maybe T.Text,
     gistEditFiles :: Maybe (M.Map T.Text (Maybe T.Text, Maybe T.Text)) -- ^ A map of the form old name to (contents, new name)
     }
+    deriving (Show, Read, Eq)
 
 instance FromJSON Gist where
     parseJSON (Object o) = Gist
