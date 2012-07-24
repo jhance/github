@@ -166,7 +166,7 @@ getGists user m = runResourceT $ gists user m $$ CL.consume
 -- the user is logged in, then it is able to grab all gists; otherwise only
 -- public gists will be fetched. This is equivalent to
 -- `https://api.github.com/users/:user/gists'
-gists :: (Failure HttpException m, MonadResource m, MonadBaseControl IO m)
+gists :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m)
       => String
       -> Manager
       -> Source m Gist
@@ -185,7 +185,7 @@ getPublicGists m = runResourceT $ publicGists m $$ CL.consume
 -- to `GET https://api.github.com/gists/public` or, if the user is not
 -- authenticated, `GET https://api.github.com/gists`, although this behavior
 -- is not relied upon.
-publicGists :: (Failure HttpException m, MonadResource m, MonadBaseControl IO m)
+publicGists :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m)
             => Manager
             -> Source m Gist
 publicGists m = let url = "https://api.github.com/gists/public"
