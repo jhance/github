@@ -8,23 +8,27 @@ module Web.GitHub.Gist
     (
     -- * Core Data Types
     Gist(..),
-    GistUser(..),
     GistCreate(..),
     GistEdit(..),
+    GistFile(..)
+    GistUser(..),
 
-    -- * ID-Based Retrieval
+    -- * Gists
+    createGist,
+    editGist,
     getGist,
 
     -- * User Gists
     gists,
     getGists,
 
+    -- * Stars
+    checkGistStar,
+    starGist,
+    unstarGist,
+
     -- * Public Gists
     publicGists,
-    getPublicGists,
-    
-    -- * Write Access
-    createGist
     )
 where
 
@@ -35,8 +39,11 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Control
 import Control.Monad.Trans.Resource
 import Data.Aeson
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as BC
 import Data.Conduit
 import qualified Data.Conduit.List as CL
+import Data.List
 import qualified Data.Map as M
 import qualified Data.Text as T
 import Network.HTTP.Conduit
@@ -46,6 +53,9 @@ import Web.GitHub.Internal.Request
 -- | Represents a complete Gist as obtained from the JSON sent back by a
 -- HTTPS request. This should rarely if ever be created without a HTTPS
 -- request, since the information is likely to be invalid.
+--
+-- As long as the 'Gist' was created a GitHub API request, the ID is guaranteed
+-- to be completely unique amongst all 'Gist's on the server.
 data Gist = Gist {
     gistUrl :: T.Text,
     gistId :: Integer,
@@ -62,7 +72,8 @@ data Gist = Gist {
 
 -- | Represents a User from the result of a Gist query. This doesn't contain
 -- all of the same data as a normal User, so to convert another HTTPS query
--- must be made to GitHub to get more detail about the User.
+-- must be made to GitHub to get more detail about the User. To do so, use
+-- 'gistUserId' and use the GitHub User API.
 data GistUser = GistUser {
     gistUserLogin :: T.Text,
     gistUserId :: Integer,
@@ -79,6 +90,11 @@ data GistUser = GistUser {
 -- If the content is not specified within the JSON, then it becomes Nothing.
 -- This does not signify an empty file; rather, the file must be obtained using
 -- an HTTP query on 'gistFileUrl'.
+--
+-- This is more efficient in most cases anyway, since the file may be large, in
+-- which case it is best to use conduits to fetch the result in chunks anyway.
+-- Hence, the storage of the content is more of a convenience for the case in
+-- which the content is sent with the JSON.
 data GistFile = GistFile {
     gistFileContent :: Maybe T.Text,
     gistFileLanguage :: Maybe T.Text,
@@ -245,9 +261,56 @@ editGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
          -> GistEdit
          -> Manager
          -> m Gist
-editGist id ge m = runResourceT $ do
+editGist i ge m = runResourceT $ do
     let json = encode ge
-    req <- parseUrl $ "https://api.github.com/gists/" ++ show id
+    req <- parseUrl $ "https://api.github.com/gists/" ++ show i
     let req' = req { method = "PATCH", requestBody = RequestBodyLBS json }
     (val, _) <- simpleRequest req' m
     return $ jsonToGist val
+
+-- | Marks a 'Gist' as being starred based on its ID.
+--
+-- Equivalent to `PUT https://api.github.com/gists/:id/star`.
+starGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+             MonadThrow m, MonadUnsafeIO m)
+         => Integer
+         -> Manager
+         -> m ()
+starGist i m = runResourceT $ do
+    req <- parseUrl $ "https://api.github.com/gists/" ++ show i ++ "/star"
+    let req' = req { method = "PUT" }
+    simpleRequest req' m
+    return ()
+
+-- | Marks a 'Gist' as being not starred based on its ID.
+--
+-- Equivalent to `DELETE https://api.github.com/gists/:id/star`.
+unstarGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+               MonadThrow m, MonadUnsafeIO m)
+           => Integer
+           -> Manager
+           -> m ()
+unstarGist i m = runResourceT $ do
+    req <- parseUrl $ "https://api.github.com/gists/" ++ show i ++ "/star"
+    let req' = req { method = "DELETE" }
+    simpleRequest req' m
+    return ()
+
+-- | Checks to see if a 'Gist' is starred based on its ID, based on the header
+-- response. A response of 204 No Content indicates there is a star, while a
+-- response of 404 Not Found indicates that there is no star.
+--
+-- Equivalent to `POST https://api.github.com/gists/:id/star`.
+checkGistStar :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+                  MonadThrow m, MonadUnsafeIO m)
+              => Integer
+              -> Manager
+              -> m Bool
+checkGistStar i m = runResourceT $ do
+   req <- parseUrl $ "https://api.github.com/gists/" ++ show i ++ "/star"
+   (_, headers) <- simpleRequest req m
+   case lookup "status" headers of
+    Nothing -> error "checkGistStar: No HTTP Status in Response Headers"
+    Just status | "204" `B.isInfixOf` status -> return True
+                | "404" `B.isInfixOf` status -> return False
+                | otherwise -> error $ "checkGistStar: Unknown HTTP Status. Should be 204 or 404, but header was: " ++ BC.unpack status
