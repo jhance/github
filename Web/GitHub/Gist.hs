@@ -21,7 +21,10 @@ module Web.GitHub.Gist
 
     -- * Public Gists
     publicGists,
-    getPublicGists
+    getPublicGists,
+    
+    -- * Write Access
+    createGist
     )
 where
 
