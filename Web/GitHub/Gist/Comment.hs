@@ -118,3 +118,16 @@ editGistComment i body m = runResourceT $ do
     req <- parseUrl $ "https://api.github.com/gists/comments/" ++ show i
     let req' = req { method = "PATCH", requestBody = RequestBodyLBS json }
     parseValue . fst <$> simpleRequest req m
+
+-- | Deletes a 'GistComment' with the given ID.
+--
+-- Equivalent to @DELETE https:/\/\/api.github.com\/gists\/comments\/:id@
+deleteGistComment :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+                     MonadThrow m, MonadUnsafeIO m)
+                  => Integer
+                  -> Manager
+                  -> m GistComment
+deleteGistComment i m = runResourceT $ do
+    req <- parseUrl $ "https://api.github.com/gists/comments/" ++ show i
+    let req' = req { method = "DELETE" }
+    parseValue . fst <$> simpleRequest req m
