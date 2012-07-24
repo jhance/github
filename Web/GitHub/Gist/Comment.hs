@@ -4,8 +4,10 @@
 -- Since 0.1.0.
 module Web.GitHub.Gist.Comment
     (
-    -- * Core Data Types
-    GistComment(..)
+    GistComment(..),
+    gistComments,
+    getGistComments,
+    getGistComment
     )
 where
 
