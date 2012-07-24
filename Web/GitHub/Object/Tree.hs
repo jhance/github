@@ -12,6 +12,8 @@ where
 
 import Control.Applicative
 import Data.Aeson
+import Data.Aeson.Types (Parser)
+import qualified Data.Foldable as F
 import qualified Data.Map as M
 import qualified Data.Text as T
 
@@ -46,6 +48,19 @@ data TreeNode = FileNode {
     treeDirectoryUrl :: T.Text
     }
     deriving (Show, Read, Eq)
+
+instance FromJSON Tree where
+    parseJSON (Object o) = Tree
+        <$> o .: "sha"
+        <*> o .: "url"
+        <*> (o .: "tree" >>= parseTreeList)
+        where parseTreeList :: Value -> Parser (M.Map T.Text TreeNode)
+              parseTreeList (Array o') = F.foldlM f M.empty o'
+              f :: M.Map T.Text TreeNode -> Value -> Parser (M.Map T.Text TreeNode)
+              f acc node@(Object o'') = M.insert
+                <$> o'' .: "path"
+                <*> parseJSON node
+                <*> return acc
 
 instance FromJSON TreeNode where
     parseJSON (Object o) = do
