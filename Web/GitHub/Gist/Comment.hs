@@ -79,7 +79,7 @@ getGistComments gist m = runResourceT $ gistComments gist m $$ CL.consume
 
 -- | Looks up a single 'GistComment' based on its ID.
 --
--- Equivalent to @GET https:\/\/api.github.com\/gists\/comments\/:id
+-- Equivalent to @GET https:\/\/api.github.com\/gists\/comments\/:id@.
 getGistComment :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
                    MonadThrow m, MonadUnsafeIO m)
                => Integer
