@@ -17,6 +17,7 @@ cabal-version:       >=1.8
 library
   exposed-modules:     Web.GitHub.Internal.Request
                      , Web.GitHub.Gist
+                     , Web.GitHub.User
   -- other-modules:       
   build-depends:       base == 4.5.*
 

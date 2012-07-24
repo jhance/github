@@ -11,7 +11,6 @@ module Web.GitHub.Gist
     GistCreate(..),
     GistEdit(..),
     GistFile(..),
-    GistUser(..),
 
     -- * Gists
     createGist,
@@ -49,6 +48,7 @@ import qualified Data.Text as T
 import Network.HTTP.Conduit
 
 import Web.GitHub.Internal.Request
+import Web.GitHub.User (PartialUser)
 
 -- | Represents a complete Gist as obtained from the JSON sent back by a
 -- HTTPS request. This should rarely if ever be created without a HTTPS
@@ -60,26 +60,13 @@ data Gist = Gist {
     gistUrl :: T.Text,
     gistId :: Integer,
     gistDescription :: Maybe T.Text,
-    gistUser :: Maybe GistUser,
+    gistUser :: Maybe PartialUser,
     gistCommentCount :: Int,
     gistHtmlUrl :: T.Text,
     gistPullUrl :: T.Text,
     gistPushUrl :: T.Text,
     gistCreatedAt :: T.Text,
     gistFiles :: M.Map T.Text GistFile
-    }
-    deriving (Show, Read, Eq)
-
--- | Represents a User from the result of a Gist query. This doesn't contain
--- all of the same data as a normal User, so to convert another HTTPS query
--- must be made to GitHub to get more detail about the User. To do so, use
--- 'gistUserId' and use the GitHub User API.
-data GistUser = GistUser {
-    gistUserLogin :: T.Text,
-    gistUserId :: Integer,
-    gistUserAvatarUrl :: T.Text,
-    gistUserGravatarId :: T.Text,
-    gistUserUrl :: T.Text
     }
     deriving (Show, Read, Eq)
 
@@ -133,16 +120,6 @@ instance FromJSON Gist where
         <*> o .: "git_push_url"
         <*> o .: "created_at"
         <*> o .: "files"
-
-    parseJSON _ = mzero
-
-instance FromJSON GistUser where
-    parseJSON (Object o) = GistUser
-        <$> o .: "login"
-        <*> o .: "id"
-        <*> o .: "avatar_url"
-        <*> o .: "gravatar_id"
-        <*> o .: "url"
 
     parseJSON _ = mzero
 
