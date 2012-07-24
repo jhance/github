@@ -1,4 +1,7 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
+-- | Contains an internal API for creating requests to the GitHub server. The
+-- rest of the modules in this package are wrappers around these two functions
+-- that automatically deserialize and serialize the JSON requests and responses.
 module Web.GitHub.Internal.Request
     (
     pagedRequest,
@@ -36,6 +39,8 @@ pagedRequest :: (Failure HttpException m, MonadResource m, MonadBaseControl IO m
              -> Source m A.Value
 pagedRequest r m = sourceState (PNext r) $ pagePull r m
 
+-- | Represents the state of sourcing pages. A vector contains all of the items
+-- from a single page.
 data PageState = PNext String
                  | PNextVector (V.Vector A.Value) String
                  | PDone
@@ -84,6 +89,7 @@ pagePull _ _ (PDoneVector vec) = do
 
 pagePull _ _ PDone = return StateClosed
 
+-- | Finds the link to the next url in the Link header
 findNextLink :: String -> Maybe String
 findNextLink s = let rels = split (dropDelims $ oneOf ",") s
                      filtered = filter f rels
@@ -92,6 +98,7 @@ findNextLink s = let rels = split (dropDelims $ oneOf ",") s
                     [] -> Nothing
                     (x:_) -> Just $ parseNextRel x
 
+-- | Parses a row for its url.
 parseNextRel :: String -> String
 parseNextRel s = let left = fromJust $ elemIndex '<' s
                      right = fromJust $ elemIndex '>' s

@@ -219,7 +219,7 @@ editGist i ge m = runResourceT $ do
 
 -- | Forks a 'Gist', creating a new 'Gist' with a different unique ID.
 --
--- Equivalent to `POST https://api.github.com/gists/:id/fork"
+-- Equivalent to `POST https://api.github.com/gists/:id/fork`
 forkGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
              MonadThrow m, MonadUnsafeIO m)
          => Integer
@@ -233,7 +233,7 @@ forkGist i m = runResourceT $ do
 
 -- | Gets a gist by ID.
 --
--- Equivalent to `GET https://api.github.com/gists/:id"
+-- Equivalent to `GET https://api.github.com/gists/:id`
 getGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
             MonadThrow m, MonadUnsafeIO m)
         => Integer 
@@ -246,8 +246,9 @@ getGist id m = runResourceT $ do
 
 -- | Source that obtains all gists of a user with the specified username. If
 -- the user is logged in, then it is able to grab all gists; otherwise only
--- public gists will be fetched. This is equivalent to
--- `https://api.github.com/users/:user/gists'
+-- public gists will be fetched.
+--
+-- Equivalent to `https://api.github.com/users/:user/gists`
 gists :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m)
       => String
       -> Manager
@@ -261,6 +262,8 @@ gists user m = let url = "https://api.github.com/users/" ++ user ++ "/gists"
 -- more efficiency, use `gists`.
 --
 -- This is a small wrapper around the `gists` function.
+--
+-- Equivalent to `GET https://api.github.com/users/:user/gists`
 getGists :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
              MonadThrow m, MonadUnsafeIO m)
          => String
@@ -268,10 +271,9 @@ getGists :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
          -> m [Gist]
 getGists user m = runResourceT $ gists user m $$ CL.consume
 
--- | Source that obtains all public gists from all users. This is equivalent
--- to `GET https://api.github.com/gists/public` or, if the user is not
--- authenticated, `GET https://api.github.com/gists`, although this behavior
--- is not relied upon.
+-- | Source that obtains all public gists from all users.
+--
+-- Equivalent to `GET https://api.github.com/gists/public`.
 publicGists :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m)
             => Manager
             -> Source m Gist
