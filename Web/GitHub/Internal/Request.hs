@@ -4,15 +4,15 @@
 -- that automatically deserialize and serialize the JSON requests and responses.
 module Web.GitHub.Internal.Request
     (
-    parseValue
+    parseValue,
     pagedRequest,
-    simpleRequest,
+    simpleRequest
     )
 where
 
 import Control.Monad.Trans.Control
 import Control.Failure
-import qualified Data.Aeson as A
+import Data.Aeson
 import qualified Data.Aeson.Parser as AP
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
@@ -45,15 +45,15 @@ parseValue val = case fromJSON val of
 pagedRequest :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m)
              => String
              -> Manager
-             -> Source m A.Value
+             -> Source m Value
 pagedRequest r m = sourceState (PNext r) $ pagePull r m
 
 -- | Represents the state of sourcing pages. A vector contains all of the items
 -- from a single page.
 data PageState = PNext String
-                 | PNextVector (V.Vector A.Value) String
+                 | PNextVector (V.Vector Value) String
                  | PDone
-                 | PDoneVector (V.Vector A.Value) 
+                 | PDoneVector (V.Vector Value) 
                  deriving (Eq, Show)
 
 -- | Pulls a single page from GitHub using `simpleRequest`. If available, it
@@ -66,11 +66,11 @@ pagePull :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m)
          => String
          -> Manager
          -> PageState
-         -> m (SourceStateResult PageState A.Value)
+         -> m (SourceStateResult PageState Value)
 pagePull r m (PNext url) = do
     r' <- parseUrl r
     (jsonVal, headers) <- simpleRequest r' m
-    let (A.Array jsonArray) = jsonVal
+    let (Array jsonArray) = jsonVal
     if V.length jsonArray == 0
         then return $ StateClosed
         else case lookup "link" headers of
@@ -122,7 +122,7 @@ parseNextRel s = let left = fromJust $ elemIndex '<' s
 simpleRequest :: (MonadBaseControl IO m, MonadResource m)
               => Request m
               -> Manager
-              -> m (A.Value, ResponseHeaders)
+              -> m (Value, ResponseHeaders)
 simpleRequest r m = do response <- http r m
                        let source = responseBody response
                        jsonVal <- source $$ jsonSink
@@ -134,5 +134,5 @@ simpleRequest r m = do response <- http r m
 -- JSON to be parsed while it is being sent from GitHub.
 --
 -- Since 0.1.0
-jsonSink :: MonadThrow m => Sink B.ByteString m A.Value
+jsonSink :: MonadThrow m => Sink B.ByteString m Value
 jsonSink = sinkParser AP.json
