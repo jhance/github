@@ -10,12 +10,14 @@ module Web.GitHub.Gist
     Gist(..),
     GistCreate(..),
     GistEdit(..),
-    GistFile(..)
+    GistFile(..),
     GistUser(..),
 
     -- * Gists
     createGist,
+    deleteGist,
     editGist,
+    forkGist,
     getGist,
 
     -- * User & Public Gists
@@ -26,7 +28,7 @@ module Web.GitHub.Gist
     -- * Stars
     checkGistStar,
     starGist,
-    unstarGist,
+    unstarGist
     )
 where
 
@@ -181,9 +183,13 @@ instance ToJSON GistEdit where
                         Nothing -> []
                         Just newname' -> ["filename" .= newname']
 
+-- | Internal utility function for easily converting a JSON Value to a Gist.
+-- Used on the result from a 'simpleRequest' or on the individual values sent
+-- by the source 'pagedRequest'.
 jsonToGist :: Value -> Gist
 jsonToGist val = case fromJSON val of
                     Success gist -> gist
+                    Error err -> error err
 
 -- | Creates a new 'Gist' based on the information from a 'GistCreate'. The new
 -- 'Gist' is created by a request and sent back in JSON and parsed. This
@@ -203,6 +209,20 @@ createGist gc m = runResourceT $ do
     (val, _) <- simpleRequest req' m
     return $ jsonToGist val
 
+-- | Deletes the 'Gist' with the given ID.
+--
+-- Equivalent to `DELETE https://api.github.com/gists/:id`
+deleteGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+               MonadThrow m, MonadUnsafeIO m)
+           => Integer
+           -> Manager
+           -> m ()
+deleteGist i m = runResourceT $ do
+    req <- parseUrl $ "https://api.github.com/gists/" ++ show i
+    let req' = req { method = "DELETE" }
+    simpleRequest req m
+    return ()
+
 -- | Edits a 'Gist' with the given id based on the fields available in a
 -- 'GistEdit'.
 --
@@ -219,9 +239,24 @@ editGist i ge m = runResourceT $ do
     let req' = req { method = "PATCH", requestBody = RequestBodyLBS json }
     (val, _) <- simpleRequest req' m
     return $ jsonToGist val
-                    Error err -> error err
+
+-- | Forks a 'Gist', creating a new 'Gist' with a different unique ID.
+--
+-- Equivalent to `POST https://api.github.com/gists/:id/fork"
+forkGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+             MonadThrow m, MonadUnsafeIO m)
+         => Integer
+         -> Manager
+         -> m Gist
+forkGist i m = runResourceT $ do
+    req <- parseUrl $ "https://api.github.com/gists/:id/fork"
+    let req' = req { method = "POST" }
+    (val, _) <- simpleRequest req' m
+    return $ jsonToGist val
 
 -- | Gets a gist by ID.
+--
+-- Equivalent to `GET https://api.github.com/gists/:id"
 getGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
             MonadThrow m, MonadUnsafeIO m)
         => Integer 
