@@ -29,6 +29,8 @@ import Network.HTTP.Types
 -- | Internal utility function for easily parsing a JSON Value.
 -- Used on the result from a 'simpleRequest' or on the individual values sent
 -- by the source 'pagedRequest'.
+--
+-- Since 0.1.0.
 parseValue :: FromJSON a => Value -> a
 parseValue val = case fromJSON val of
                     Success x -> x

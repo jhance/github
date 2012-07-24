@@ -1,4 +1,7 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
+-- | An API for 'Web.GitHub.Gist.Comment's.
+--
+-- Since 0.1.0.
 module Web.GitHub.Gist.Comment
     (
     -- * Core Data Types
@@ -24,6 +27,8 @@ import Web.GitHub.User (PartialUser)
 -- The ID is guaranteed to be unique amongst all 'GistComment's on the server,
 -- and on the client as well if these are only created by HTTPS requests. If
 -- created by hand, the information is likely to be invalid and useless.
+--
+-- Since 0.1.0.
 data GistComment = GistComment {
     gistCommentBody :: T.Text,
     gistCommentCreatedAt :: T.Text,
@@ -47,6 +52,8 @@ instance FromJSON GistComment where
 -- using the 'Web.GitHub.Gist.Gist' ID.
 --
 -- Equivalent to @GET https:\/\/api.github.com\/gists\/:gist\/comments@.
+--
+-- Since 0.1.0.
 gistComments :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m)
              => Integer
              -> Manager
@@ -59,6 +66,8 @@ gistComments gist m = pagedRequest url m $= CL.map parseValue
 -- same functionality.
 --
 -- Equivalent to @GET https:\/\/api.github.com\/gists\/:gist\/comments@.
+--
+-- Since 0.1.0.
 getGistComments :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
                     MonadThrow m, MonadUnsafeIO m)
                 => Integer
