@@ -33,7 +33,7 @@ import Network.HTTP.Types
 -- because pagination is not needed for any other verb.
 --
 -- Since 0.1.0
-pagedRequest :: (Failure HttpException m, MonadResource m, MonadBaseControl IO m)
+pagedRequest :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m)
              => String
              -> Manager
              -> Source m A.Value
@@ -53,7 +53,7 @@ data PageState = PNext String
 -- top-level array.
 --
 -- Since 0.1.0
-pagePull :: (Failure HttpException m, MonadResource m, MonadBaseControl IO m)
+pagePull :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m)
          => String
          -> Manager
          -> PageState
@@ -110,7 +110,7 @@ parseNextRel s = let left = fromJust $ elemIndex '<' s
 -- values returned are objects from within the top-level array)
 -- 
 -- Since 0.1.0
-simpleRequest :: (MonadResource m, MonadBaseControl IO m)
+simpleRequest :: (MonadBaseControl IO m, MonadResource m)
               => Request m
               -> Manager
               -> m (A.Value, ResponseHeaders)
