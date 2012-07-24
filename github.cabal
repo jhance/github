@@ -19,6 +19,7 @@ library
                      , Web.GitHub.Gist
                      , Web.GitHub.Gist.Comment
                      , Web.GitHub.Object.Blob
+                     , Web.GitHub.Object.Tree
                      , Web.GitHub.User
   -- other-modules:       
   build-depends:       base == 4.5.*
