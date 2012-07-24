@@ -188,8 +188,7 @@ createGist gc m = runResourceT $ do
     let json = encode gc
     req <- parseUrl "https://api.github.com/gists"
     let req' = req { method = "POST", requestBody = RequestBodyLBS json }
-    (val, _) <- simpleRequest req' m
-    return $ parseValue val
+    parseValue . fst <$> simpleRequest req' m
 
 -- | Deletes the 'Gist' with the given ID.
 --
@@ -223,8 +222,7 @@ editGist i ge m = runResourceT $ do
     let json = encode ge
     req <- parseUrl $ "https://api.github.com/gists/" ++ show i
     let req' = req { method = "PATCH", requestBody = RequestBodyLBS json }
-    (val, _) <- simpleRequest req' m
-    return $ parseValue val
+    parseValue . fst <$> simpleRequest req' m
 
 -- | Forks a 'Gist', creating a new 'Gist' with a different unique ID.
 --
@@ -239,8 +237,7 @@ forkGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
 forkGist i m = runResourceT $ do
     req <- parseUrl $ "https://api.github.com/gists/:id/fork"
     let req' = req { method = "POST" }
-    (val, _) <- simpleRequest req' m
-    return $ parseValue val
+    parseValue . fst <$> simpleRequest req' m
 
 -- | Gets a gist by ID.
 --
@@ -254,8 +251,7 @@ getGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
         -> m Gist
 getGist id m = runResourceT $ do
     req <- parseUrl $ "https://api.github.com/gists/" ++ show id
-    (val, _) <- simpleRequest req m
-    return $ parseValue val
+    parseValue . fst <$> simpleRequest req m
 
 -- | Source that obtains all gists of a user with the specified username. If
 -- the user is logged in, then it is able to grab all gists; otherwise only

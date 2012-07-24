@@ -87,5 +87,4 @@ getGistComment :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
                -> m GistComment
 getGistComment i m = runResourceT $ do
     req <- parseUrl $ "https://api.github.com/gists/comments/" ++ show i
-    (val, _) <- simpleRequest req m
-    return $ parseValue val
+    parseValue . fst <$> simpleRequest req m
