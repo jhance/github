@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 -- | An API for dealing with Git 'Tree's. A 'Tree' is Gits generic
 -- representation of a filesystem. Each 'Tree' defines a single directory
 -- (but not its subdirectories), mapping single-level filepaths to other
@@ -9,6 +10,8 @@ module Web.GitHub.Object.Tree
     )
 where
 
+import Control.Applicative
+import Data.Aeson
 import qualified Data.Map as M
 import qualified Data.Text as T
 
@@ -43,3 +46,16 @@ data TreeNode = FileNode {
     treeDirectoryUrl :: T.Text
     }
     deriving (Show, Read, Eq)
+
+instance FromJSON TreeNode where
+    parseJSON (Object o) = do
+        t <- o .: "type"
+        if t == ("blob" :: T.Text)
+            then FileNode
+                <$> (o .: "mode" >>= return . (== ("100755" :: T.Text)))
+                <*> o .: "sha"
+                <*> o .: "size"
+                <*> o .: "url"
+            else DirectoryNode
+                <$> o .: "sha"
+                <*> o .: "url"
