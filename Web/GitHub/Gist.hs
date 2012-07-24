@@ -199,6 +199,8 @@ publicGists m = let url = "https://api.github.com/gists/public"
 -- 'Gist' is created by a request and sent back in JSON and parsed. This
 -- essentially converts a 'GistCreate' template into a real 'Gist' with all of
 -- its associated information.
+-- 
+-- Equivalent to `POST https://api.github.com/gists`.
 createGist :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
                MonadThrow m, MonadUnsafeIO m)
            => GistCreate
