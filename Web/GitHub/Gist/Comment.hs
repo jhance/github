@@ -88,3 +88,18 @@ getGistComment :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
 getGistComment i m = runResourceT $ do
     req <- parseUrl $ "https://api.github.com/gists/comments/" ++ show i
     parseValue . fst <$> simpleRequest req m
+
+-- | Creates a new 'GistComment' by using a request to the server.
+--
+-- Equivalent to @POST https:\/\/api.github.com\/gists\/:gist\/comments@.
+createGistComment :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+                      MonadThrow m, MonadUnsafeIO m)
+                  => Integer -- ^ ID of parent 'Web.GitHub.Gist.Gist'
+                  -> T.Text -- ^ Body of 'GistComment'
+                  -> Manager
+                  -> m GistComment
+createGistComment i body m = runResourceT $ do
+    let json = encode . object $ ["body" .= body]
+    req <- parseUrl $ "https://api.github.com/gists/" ++ show i ++ "/comments"
+    let req' = req { method = "POST", requestBody = RequestBodyLBS json }
+    parseValue . fst <$> simpleRequest req m
