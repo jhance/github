@@ -10,6 +10,7 @@ module Web.GitHub.Gist
     Gist(..),
     GistUser(..),
     GistCreate(..),
+    GistEdit(..),
 
     -- * ID-Based Retrieval
     getGist,
