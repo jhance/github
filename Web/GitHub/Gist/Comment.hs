@@ -103,3 +103,18 @@ createGistComment i body m = runResourceT $ do
     req <- parseUrl $ "https://api.github.com/gists/" ++ show i ++ "/comments"
     let req' = req { method = "POST", requestBody = RequestBodyLBS json }
     parseValue . fst <$> simpleRequest req m
+
+-- | Edits a 'GistComment' with the given ID to have the new body.
+--
+-- Equivalent to @PATCH https:/\/\/api.github.com\/gists\/comments\/:id@
+editGistComment :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+                    MonadThrow m, MonadUnsafeIO m)
+                => Integer
+                -> T.Text
+                -> Manager
+                -> m GistComment
+editGistComment i body m = runResourceT $ do
+    let json = encode . object $ ["body" .= body]
+    req <- parseUrl $ "https://api.github.com/gists/comments/" ++ show i
+    let req' = req { method = "PATCH", requestBody = RequestBodyLBS json }
+    parseValue . fst <$> simpleRequest req m
