@@ -8,6 +8,7 @@ where
 
 import Control.Applicative
 import Control.Monad
+import Control.Monad.IO.Class
 import Control.Monad.Trans.Control
 import Control.Failure
 import Data.Aeson
@@ -52,3 +53,15 @@ gistComments :: (Failure HttpException m, MonadBaseControl IO m, MonadResource m
              -> Source m GistComment
 gistComments gist m = pagedRequest url m $= CL.map parseValue
     where url = "https://api.github.com/gists/" ++ show gist ++ "/coments"
+
+-- | Gets all of a a 'Web.GitHub.Gist.Gist's comments. This is a thin wrapper
+-- around 'gistComments' which is a more efficient conduit-based version of this
+-- same functionality.
+--
+-- Equivalent to @GET https:\/\/api.github.com\/gists\/:gist\/comments@.
+getGistComments :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+                    MonadThrow m, MonadUnsafeIO m)
+                => Integer
+                -> Manager
+                -> m [GistComment]
+getGistComments gist m = runResourceT $ gistComments gist m $$ CL.consume
