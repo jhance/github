@@ -34,13 +34,13 @@ data Blob = Blob {
     blobContent :: T.Text,
     blobEncoding :: BlobEncoding
     }
-    deriving (Show, Read, Eq)
+    deriving (Eq, Ord, Read, Show)
 
 -- | Blobs can be encoded with either Utf8 or with Base64.
 --
 -- Since 0.1.0.
 data BlobEncoding = BlobEncodingUtf8 | BlobEncodingBase64
-    deriving (Show, Read, Eq)
+    deriving (Eq, Ord, Read, Show)
 
 instance FromJSON Blob where
     parseJSON (Object o) = Blob

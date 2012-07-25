@@ -32,7 +32,7 @@ data Tree = Tree {
     treeUrl :: T.Text,
     treePaths :: M.Map T.Text TreeNode
     }
-    deriving (Show, Read, Eq)
+    deriving (Eq, Ord, Read, Show)
 
 -- | Represents a single element of a 'Tree'. This element contains the
 -- filesystem information about another object, which can be either a blob or
@@ -49,7 +49,7 @@ data TreeNode = FileNode {
     treeDirectorySha :: T.Text,
     treeDirectoryUrl :: T.Text
     }
-    deriving (Show, Read, Eq)
+    deriving (Eq, Ord, Read, Show)
 
 -- | A data structure similar to a 'Tree' but instead of holding all subtrees
 -- and blobs of the tree, it holds all subblobs from recursively scanning
@@ -73,6 +73,7 @@ data RecursiveTree = RecursiveTree {
     recursiveTreeUrl :: T.Text,
     recursiveTreePaths :: M.Map T.Text RecursiveTreeFile
     }
+    deriving (Eq, Ord, Read, Show)
 
 -- | A 'RecursiveTreeFile' differs from 'TreeNode' in that it always represents
 -- a file and its path is from the tree that it was recursively calculated
@@ -95,6 +96,7 @@ data RecursiveTreeFile = RecursiveTreeFile {
     recursiveTreeFileSize :: Integer,
     recursiveTreeFileUrl :: T.Text
     }
+    deriving (Eq, Ord, Read, Show)
 
 instance FromJSON Tree where
     parseJSON (Object o) = Tree

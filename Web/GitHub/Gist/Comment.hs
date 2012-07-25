@@ -38,7 +38,7 @@ data GistComment = GistComment {
     gistCommentUrl :: T.Text,
     gistCommentUser :: PartialUser
     }
-    deriving (Show, Read, Eq)
+    deriving (Eq, Ord, Read, Show)
 
 instance FromJSON GistComment where
     parseJSON (Object o) = GistComment

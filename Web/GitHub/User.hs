@@ -25,7 +25,7 @@ data PartialUser = PartialUser {
     partialUserGravatarId :: T.Text,
     partialUserUrl :: T.Text
     }
-    deriving (Show, Read, Eq)
+    deriving (Eq, Ord, Read, Show)
 
 instance FromJSON PartialUser where
     parseJSON (Object o) = PartialUser
