@@ -177,3 +177,29 @@ getTree username repository sha m = runResourceT $ do
         sha
         ]
     parseValue . fst <$> simpleRequest req m
+
+-- | Fetches a tree recursively. Incremental parsing should make this
+-- effectively return as soon as the request finishes, but this does not
+-- seem to be a paged request so it all is fetched with one request.
+--
+-- Equivalent to @GET https:\/\/api.github.com\/repos\/:user\/:repo\/git\/trees\/:sha?recursive=1@.
+--
+-- Since 0.1.0.
+getRecursiveTree :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+                     MonadThrow m, MonadUnsafeIO m)
+                 => T.Text -- ^ Username
+                 -> T.Text -- ^ Repository
+                 -> T.Text -- ^ SHA Hash
+                 -> Manager
+                 -> m RecursiveTree
+getRecursiveTree username repository sha m = runResourceT $ do
+    req <- parseUrl . T.unpack $ T.concat [
+        "https://api.github.com/repos/",
+        username,
+        "/",
+        repository,
+        "/git/trees/",
+        sha,
+        "?recursive=1"
+        ]
+    parseValue . fst <$> simpleRequest req m
