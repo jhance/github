@@ -1,0 +1,25 @@
+This project is incomplete and what is complete is alpha-quality at best. Some
+of it is untested code, but it is currently under intense development as a
+one man project.
+
+Although it has a file github.cabal, this will be renamed in the future since
+there exists another github package on hackage... Alternative name suggestions
+are welcome.
+
+Information on Hacking:
+    - If you only need one small thing from a package and other names are
+      liable to pollute the namespace, please use a restriction
+    - If names will collide, please use qualified imports
+    - Document anything that is exported, including the module. This project
+      should have 100% Haddock Coverage.
+    - All functions, etc, should have a "Since" tag on them. I forget this alot,
+      too.
+    - Any function related to a HTTPS request should have an "Equivalent to"
+      tag above the "Since" tag.
+    - Pull requests are always welcome
+
+Information on Versioning:
+    - It currently depends on conduit-0.4. When more of the package is complete
+      it will probably be updated to conduit-0.5. Most of the changes will
+      probably be simple renames and probably occur in
+      Web.GitHub.Internal.Request.
