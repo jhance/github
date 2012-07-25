@@ -91,8 +91,8 @@ data RecursiveTree = RecursiveTree {
 -- possible files.
 data RecursiveTreeFile = RecursiveTreeFile {
     recursiveTreeFileExecutable :: Bool,
-    recursiveTreeFileSize :: Integer,
     recursiveTreeFileSha :: T.Text,
+    recursiveTreeFileSize :: Integer,
     recursiveTreeFileUrl :: T.Text
     }
 
@@ -121,3 +121,10 @@ instance FromJSON TreeNode where
             else DirectoryNode
                 <$> o .: "sha"
                 <*> o .: "url"
+
+instance FromJSON RecursiveTreeFile where
+    parseJSON (Object o) = RecursiveTreeFile
+        <$> (o .: "mode" >>= return . (== ("100755" :: T.Text)))
+        <*> o .: "sha"
+        <*> o .: "size"
+        <*> o .: "url"
