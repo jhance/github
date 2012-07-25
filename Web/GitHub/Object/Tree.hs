@@ -13,11 +13,18 @@ module Web.GitHub.Object.Tree
 where
 
 import Control.Applicative
+import Control.Failure
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Control
+import Control.Monad.Trans.Resource
 import Data.Aeson
 import Data.Aeson.Types (Parser)
 import qualified Data.Foldable as F
 import qualified Data.Map as M
 import qualified Data.Text as T
+import Network.HTTP.Conduit
+
+import Web.GitHub.Internal.Request
 
 -- | Represents a Git 'Tree'. A 'Tree' is essentially the representation of
 -- a directory in Git, although it does not know of its own name as it can
@@ -145,3 +152,28 @@ instance FromJSON RecursiveTreeFile where
         <*> o .: "sha"
         <*> o .: "size"
         <*> o .: "url"
+
+-- | Fetches a tree non-recursively. Incremental parsing should make this
+-- effectively return as soon as the request finishes, but this does not
+-- seem to be a paged request so it all is fetched with one request.
+--
+-- Equivalent to @GET https:\/\/api.github.com\/repos\/:user\/:repo\/git\/trees\/:sha@.
+--
+-- Since 0.1.0.
+getTree :: (Failure HttpException m, MonadBaseControl IO m, MonadIO m,
+            MonadThrow m, MonadUnsafeIO m)
+        => T.Text -- ^ Username
+        -> T.Text -- ^ Repository
+        -> T.Text -- ^ SHA Hash
+        -> Manager
+        -> m Tree
+getTree username repository sha m = runResourceT $ do
+    req <- parseUrl . T.unpack $ T.concat [
+        "https://api.github.com/repos/",
+        username,
+        "/",
+        repository,
+        "/git/trees/",
+        sha
+        ]
+    parseValue . fst <$> simpleRequest req m
