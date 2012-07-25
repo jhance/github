@@ -122,6 +122,21 @@ instance FromJSON TreeNode where
                 <$> o .: "sha"
                 <*> o .: "url"
 
+instance FromJSON RecursiveTree where
+    parseJSON (Object o) = RecursiveTree
+        <$> o .: "sha"
+        <*> o .: "url"
+        <*> (o .: "tree" >>= parseTreeList)
+        where parseTreeList :: Value -> Parser (M.Map T.Text RecursiveTreeFile)
+              parseTreeList (Array o') = F.foldlM f M.empty o'
+              f :: M.Map T.Text RecursiveTreeFile
+                -> Value 
+                -> Parser (M.Map T.Text RecursiveTreeFile)
+              f acc file@(Object o'') = M.insert
+                <$> o'' .: "path"
+                <*> parseJSON file
+                <*> return acc
+
 instance FromJSON RecursiveTreeFile where
     parseJSON (Object o) = RecursiveTreeFile
         <$> (o .: "mode" >>= return . (== ("100755" :: T.Text)))
