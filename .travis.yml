@@ -1,0 +1,7 @@
+language: haskell
+script:
+    - cabal configure
+    - cabal build
+install:
+    - cabal update
+    - cabal install
