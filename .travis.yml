@@ -5,3 +5,5 @@ script:
 install:
     - cabal update
     - cabal install
+notifications:
+    email: false
