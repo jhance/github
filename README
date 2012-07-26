@@ -1,6 +1,8 @@
 This project is incomplete and what is complete is alpha-quality at best. Some
-of it is untested code, but it is currently under intense development as a
-one man project.
+of it is untested code, but it is currently under development as a one man
+project. It is written in some of my spare time, so doesn't expect it to be
+complete for awhile. I am trying to make sure that I get at least some work
+done on this at least once a day.
 
 Although it has a file github.cabal, this will be renamed in the future since
 there exists another github package on hackage... Alternative name suggestions
