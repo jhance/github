@@ -105,6 +105,17 @@ data RecursiveTreeFile = RecursiveTreeFile {
     }
     deriving (Eq, Ord, Read, Show)
 
+-- | Represents a tree ready for creation. Consists of a tree to use as a base
+-- for the new tree (optional) and a vector of 'TreeCreateNode's which are the
+-- nodes of the new tree. These nodes can be direct subfiles or subfiles of
+-- subtrees.
+--
+-- Since 0.1.0.
+data TreeCreate = TreeCreate {
+    treeCreateSha :: Maybe T.Text,
+    treeCreateNodes :: V.Vector TreeCreateNode
+    }
+
 -- | Contains information on a tree ready to be created. It is a hybrid
 -- between a recursively defined tree and a nonrecursively defined tree,
 -- since it can contain subtrees, subfiles, and also files within subtrees
