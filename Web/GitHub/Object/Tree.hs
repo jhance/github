@@ -105,6 +105,39 @@ data RecursiveTreeFile = RecursiveTreeFile {
     }
     deriving (Eq, Ord, Read, Show)
 
+-- | Contains information on a tree ready to be created. It is a hybrid
+-- between a recursively defined tree and a nonrecursively defined tree,
+-- since it can contain subtrees, subfiles, and also files within subtrees
+-- directly defined by their path.
+--
+-- This tree can be created based on another tree, in which case it is this
+-- data structure represents a delta-tree, defining the changes since another
+-- tree. However, this approach is limited because deletes are not supported.
+--
+-- An entire tree can be represented using a 'Vector' of these.
+--
+-- Since 0.1.0.
+data TreeCreateNode = TreeCreateFile {
+    treeCreateFileBlob :: TreeCreateFileBlob,
+    treeCreateFilePath :: T.Text,
+    treeCreateFileExecutable :: Bool,
+    }
+    |
+    TreeCreateDirectory {
+    treeCreateDirectoryPath :: T.Text,
+    treeCreateDirectorySha :: T.Text
+    }
+    deriving (Eq, Ord, Read, Show)
+
+-- | When creating a tree, one can either use the contents of a blob (in which
+-- case the blob will be created on the server if it does not already exist)
+-- or use the SHA of an existing blob.
+--
+-- Since 0.1.0.
+data TreeCreateFileBlob = TreeCreateFileBlobContents T.Text
+                          | TreeCreateFileBlobSha T.Text
+                          deriving (Eq, Ord, Read, Show)
+
 instance FromJSON Tree where
     parseJSON (Object o) = Tree
         <$> o .: "sha"
